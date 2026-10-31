@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en" data-layout="narrow">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>MySavvy C+ Prototype</title>
+<link rel="icon" href="assets/logo.png">
+<meta name="robots" content="noindex">
+<link rel="preload" href="assets/fonts/dm-sans.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+/* Self-hosted latin subsets (SIL OFL 1.1), so the preview makes no third-party requests */
+@font-face{font-family:'Cormorant Garamond';font-weight:500 600;font-display:swap;src:url(assets/fonts/cormorant-garamond.woff2) format('woff2')}
+@font-face{font-family:'DM Sans';font-weight:400 600;font-display:swap;src:url(assets/fonts/dm-sans.woff2) format('woff2')}
+/* ===== Tokens: brand values, accessible mixes of them, and the motion/space/type scale ===== */
+:root{
+  --ink:#1a1612; --umber:#3d3530; --cream:#f8f2ea; --card:#f0e9df; --line:#e0d5c8; --line-2:#c8b99a; --gold:#b8860b; --logo-gold:#d0ad3f; --light:#f4f0e8; --white:#fff;
+  --muted:#73685f; --line-strong:#988a79; --gold-ink:#87630d; --tint:#f3e9d8; --tint-2:#efe3cb; --ink-2:#27231f; --ink-3:#35302c; --ink-4:#423e39; --muted-dark:#958b82; --pill:#e8dfd4;
+  --serif:'Cormorant Garamond',Georgia,serif; --sans:'DM Sans',system-ui,sans-serif;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+  --r1:6px; --r2:12px; --r3:20px;
+  --t-press:120ms; --t-ui:200ms; --t-page:280ms; --ease:cubic-bezier(.2,.8,.2,1);
+  --tap:48px; --nav-h:64px; --safe-b:env(safe-area-inset-bottom,0px);
+ --pv:0px;
+  --gutter:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;background:var(--cream)}
+body{margin:0;background:var(--cream);color:var(--umber);font:400 16px/1.55 var(--sans);-webkit-font-smoothing:antialiased;caret-color:var(--gold-ink);overflow-x:hidden}
+::selection{background:var(--tint-2);color:var(--ink)}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{color:var(--ink);text-wrap:balance}
+a{color:var(--gold-ink);text-underline-offset:3px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--gold-ink);outline-offset:3px;border-radius:var(--r1)}
+.on-dark :focus-visible,.live :focus-visible{outline-color:var(--logo-gold)}
+.i{display:block;flex:none}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:-999px;top:8px;z-index:99;background:var(--white);padding:8px 12px}.skip:focus{left:8px}
+
+/* Type */
+.display{font:600 34px/1.06 var(--serif);letter-spacing:-.02em;color:var(--ink)}
+.title{font:600 30px/1.1 var(--serif);letter-spacing:-.015em;color:var(--ink)}
+.h3{font:600 17px/1.35 var(--sans);color:var(--ink)}
+.lede{font-size:17px;color:var(--umber);margin-top:var(--s2);max-width:58ch}
+.small{font-size:14px}.cap{font-size:13px;color:var(--muted)}
+.serif{font-family:var(--serif);font-weight:600}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);min-height:var(--tap);padding:0 var(--s5);border-radius:var(--r1);border:0;font-weight:600;font-size:16px;text-decoration:none;white-space:nowrap;transition:background-color var(--t-ui),transform var(--t-press) var(--ease),box-shadow var(--t-ui)}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--ink);color:var(--light)}.btn-primary:hover{background:var(--ink-3)}
+.btn-gold{background:var(--logo-gold);color:var(--ink)}.btn-gold:hover{background:var(--gold)}
+.btn-line{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line-strong)}.btn-line:hover{background:var(--card)}
+.btn-line-light{background:transparent;color:var(--light);box-shadow:inset 0 0 0 1px var(--muted-dark)}.btn-line-light:hover{background:var(--ink-3)}
+.btn-quiet{background:none;color:var(--ink);padding:0 var(--s3)}.btn-quiet:hover{background:var(--card)}
+.btn-block{width:100%}
+.btn-block,.closing .btn,.tray .btn,.dialog .btn{white-space:normal;text-align:center;line-height:1.25;padding-top:8px;padding-bottom:8px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.link{background:none;border:0;padding:0;color:var(--gold-ink);font-weight:600;text-decoration:underline;text-underline-offset:3px;min-height:var(--tap);display:inline-flex;align-items:center}
+.on-dark .link{color:var(--logo-gold)}
+.icon-btn{width:var(--tap);height:var(--tap);display:inline-grid;place-items:center;border:0;border-radius:var(--r1);background:none;color:var(--umber);transition:background-color var(--t-ui)}
+.icon-btn:hover{background:var(--card)}
+
+/* Fields */
+.field{display:grid;gap:6px}
+.field label{font-size:14px;font-weight:500;color:var(--ink)}
+.field .hint{font-size:13px;color:var(--muted)}
+.field input,.field textarea{width:100%;min-height:var(--tap);padding:10px 14px;border:1px solid var(--line-strong);border-radius:var(--r1);background:var(--white);color:var(--ink);font-size:16px;scroll-margin-bottom:120px;transition:border-color var(--t-ui),box-shadow var(--t-ui)}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--gold-ink);box-shadow:0 0 0 3px var(--tint-2)}
+.field.has-error input{border-color:var(--umber);box-shadow:inset 3px 0 0 var(--umber)}
+.field .err{display:none;font-size:13px;color:var(--ink);font-weight:500;gap:6px;align-items:center}
+.field.has-error .err{display:flex}
+.chips{display:flex;flex-wrap:wrap;gap:var(--s2)}
+.chip{min-height:44px;padding:0 var(--s4);border-radius:999px;border:0;background:var(--card);color:var(--umber);font-weight:500;transition:background-color var(--t-ui),color var(--t-ui)}
+.chip:hover{background:var(--pill)}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--light)}
+.chip .num{opacity:.7;margin-left:4px}
+.seg{display:inline-flex;background:var(--card);border-radius:var(--r1);padding:3px;gap:3px}
+.seg button{border:0;background:none;border-radius:4px;min-height:40px;padding:0 var(--s4);font-weight:500;white-space:nowrap;color:var(--umber);transition:background-color var(--t-ui),color var(--t-ui)}
+.seg button[aria-pressed=true],.seg button[aria-selected=true]{background:var(--ink);color:var(--light)}
+.seg .num{opacity:.75;margin-left:6px}
+
+/* ===== Shell: one nav element, bottom bar when narrow, sidebar when wide ===== */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--white);border-top:1px solid var(--line);padding:6px var(--s2) calc(6px + var(--safe-b));view-transition-name:nav}
+.nav .brand,.nav .nav-start{display:none}
+.nav ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr)}
+.nav li a{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;border-radius:var(--r2);color:var(--muted);text-decoration:none;font-size:12px;font-weight:500;transition:color var(--t-ui),background-color var(--t-ui)}
+.nav li a[aria-current=page]{color:var(--ink)}
+.nav li a[aria-current=page] .i{color:var(--gold-ink)}
+.badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--gold);color:var(--ink);font-size:11px;font-weight:600;display:grid;place-items:center;animation:pop .5s var(--ease) both}
+@keyframes pop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+.main{padding:0 var(--gutter) calc(var(--nav-h) + var(--s7) + var(--safe-b));max-width:1120px;margin:0 auto}
+.appbar{display:flex;align-items:center;gap:var(--s2);min-height:56px;margin:0 calc(-1 * var(--s2)) var(--s3)}
+.appbar img{height:30px;margin-left:var(--s2)}
+.appbar .grow{flex:1}
+.appbar h1{font:600 17px var(--sans)}
+.lang{border:0;background:none;color:var(--gold-ink);font-weight:600;font-size:14px;min-width:var(--tap);min-height:var(--tap)}
+
+[data-layout=wide] .shell{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+[data-layout=wide] .nav{position:sticky;top:0;height:100vh;border:0;border-right:1px solid var(--line);background:var(--cream);padding:28px var(--s3) var(--s5);display:flex;flex-direction:column;gap:var(--s5)}
+[data-layout=wide] .nav .brand{display:block;margin:0 var(--s2)}
+[data-layout=wide] .nav .brand img{height:34px;display:block}
+[data-layout=wide] .nav .nav-start{display:flex}
+[data-layout=wide] .nav ul{display:flex;flex-direction:column;gap:2px}
+[data-layout=wide] .nav li a{flex-direction:row;justify-content:flex-start;gap:var(--s3);min-height:40px;padding:0 var(--s3);font-size:15px;color:var(--umber);border-radius:var(--r1)}
+[data-layout=wide] .nav li a:hover{background:var(--card)}
+[data-layout=wide] .nav li a[aria-current=page]{background:var(--pill);color:var(--ink);font-weight:600}
+[data-layout=wide] .badge{position:static;margin-left:auto}
+[data-layout=wide] .nav .nav-foot{margin-top:auto;display:flex;align-items:center;gap:var(--s2);padding:0 var(--s2);font-size:14px;color:var(--ink)}
+.nav .nav-foot{display:none}
+.avatar-me{width:32px;height:32px;border-radius:50%;background:var(--ink);color:var(--logo-gold);display:grid;place-items:center;font-size:12px;font-weight:600;flex:none}
+[data-layout=wide] .main{padding:48px 40px 96px;width:100%;min-width:0}
+[data-layout=wide] .appbar{display:none}
+
+/* ===== Home ===== */
+.notice{display:flex;align-items:center;gap:var(--s3);background:var(--ink);color:var(--light);border-radius:var(--r2);padding:var(--s3) var(--s3) var(--s3) var(--s4);margin-bottom:var(--s5);animation:rise var(--t-page) var(--ease) both}
+.notice .grow{flex:1;font-size:15px}
+.notice .i{color:var(--logo-gold)}
+.notice a{color:var(--logo-gold);font-weight:600}
+.notice .icon-btn{color:var(--light)}.notice .icon-btn:hover{background:var(--ink-3)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink-4);border-top-color:var(--logo-gold);animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hello{margin:var(--s2) 0 var(--s5)}
+.lead-block{background:var(--ink);color:var(--light);border-radius:var(--r2);overflow:hidden;display:grid}
+.lead-block .pic{position:relative;aspect-ratio:16/9;background:var(--ink-2)}
+.lead-block .pic img{width:100%;height:100%;object-fit:cover;object-position:50% 25%;display:block}
+.lead-block .txt{padding:var(--s5) var(--s5) var(--s5);display:grid;gap:var(--s2)}
+.lead-block .kick{font-size:14px;color:var(--muted-dark)}
+.lead-block h2{font:600 28px/1.1 var(--serif);color:var(--light)}
+.lead-block p{color:var(--light)}
+.lead-block .acts{display:grid;gap:var(--s2);margin-top:var(--s3)}
+.duo{display:flex;gap:var(--s2)}
+.duo img{width:56px;height:56px;border-radius:50%;object-fit:cover;object-position:50% 20%;border:2px solid var(--ink)}
+.duo img+img{margin-left:-16px}
+.previews{margin-top:var(--s5);background:var(--card);border-radius:var(--r2);list-style:none;padding:0 var(--s4)}
+.previews li+li{border-top:1px solid var(--line)}
+.previews a{display:grid;grid-template-columns:24px minmax(0,1fr) 20px;gap:var(--s3);align-items:center;padding:var(--s4) 0;text-decoration:none;color:var(--umber);min-height:64px}
+.previews .i{color:var(--gold-ink)}
+.previews b{display:block;color:var(--ink);font-weight:600}
+.previews span{display:block;font-size:14px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.previews .chev{color:var(--muted)}
+.today{display:none}
+[data-layout=wide] .home-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--s4);align-items:stretch}
+[data-layout=wide] .lead-block{grid-column:span 8;grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
+[data-layout=wide] .lead-block.solo{grid-column:span 12}
+[data-layout=wide] .lead-block .pic{aspect-ratio:auto;min-height:280px}
+[data-layout=wide] .lead-block .txt{padding:var(--s6);align-content:center}
+[data-layout=wide] .lead-block h2{font-size:34px}
+[data-layout=wide] .lead-block .acts{display:flex;flex-wrap:wrap}
+[data-layout=wide] .today{grid-column:span 4;display:flex;flex-direction:column;gap:var(--s2);background:var(--card);border-radius:var(--r2);padding:var(--s5)}
+.today q{font:600 24px/1.18 var(--serif);color:var(--ink);quotes:none}
+.today .act{margin-top:auto;font-weight:600}
+[data-layout=wide] .previews{grid-column:span 12;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:none;padding:0;gap:var(--s4);margin-top:0}
+[data-layout=wide] .previews li{background:var(--card);border-radius:var(--r2);padding:0 var(--s4)}
+[data-layout=wide] .previews li+li{border:0}
+@media (max-width:1279px){[data-layout=wide] .previews{grid-template-columns:1fr 1fr}[data-layout=wide] .lead-block h2{font-size:28px}}
+[data-layout=wide] .display{font-size:48px}
+[data-layout=wide] .title{font-size:40px}
+
+/* ===== Start a session ===== */
+.section{padding:var(--s5) 0;border-top:1px solid var(--line)}
+.section:first-of-type{border-top:0}
+.section h2{font:600 17px var(--sans);margin-bottom:var(--s3)}
+.coaches{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+.coach{border:0;padding:0;background:var(--white);border-radius:var(--r2);overflow:hidden;text-align:left;box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow var(--t-ui),transform var(--t-press) var(--ease)}
+.coach:active{transform:scale(.985)}
+.coach img{width:100%;aspect-ratio:4/5;object-fit:cover;object-position:50% 22%;display:block}
+.coach .who{display:flex;justify-content:space-between;align-items:center;padding:var(--s3) var(--s3) var(--s3) var(--s4)}
+.coach b{font:600 22px/1.1 var(--serif);color:var(--ink);display:block}
+.coach span{font-size:13px;color:var(--muted)}
+.coach .tick{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--card);color:transparent;transition:background-color var(--t-ui),color var(--t-ui)}
+.coach[aria-checked=true]{box-shadow:inset 0 0 0 2px var(--gold)}
+.coach[aria-checked=true] .tick{background:var(--gold);color:var(--ink)}
+.summary{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s3)}
+.summary p{color:var(--ink)}
+.picked{list-style:none;margin:0;padding:0;display:grid;gap:var(--s2)}
+.picked li{display:flex;align-items:center;gap:var(--s2);background:var(--card);border-radius:var(--r1);padding:var(--s1) var(--s1) var(--s1) var(--s4);color:var(--ink)}
+.picked li span{flex:1}
+.sticky-go{position:sticky;bottom:calc(var(--nav-h) + var(--safe-b));padding:var(--s3) 0;background:var(--cream)}
+.sticky-go .cap{text-align:center;margin-top:var(--s2)}
+[data-layout=wide] .sticky-go{bottom:0}
+[data-layout=wide] .start-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:var(--s7);align-items:start}
+[data-layout=wide] .start-side{position:sticky;top:48px}
+
+/* ===== Conversation ===== */
+body[data-screen=session]{background:var(--ink)}
+.live{min-height:calc(100svh - var(--pv));background:var(--ink);color:var(--light);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;position:relative}
+.live-top{display:flex;align-items:center;gap:var(--s3);padding:var(--s2) var(--s3) var(--s2) var(--s4);min-height:60px}
+.live-top .ttl{flex:1;min-width:0}
+.live-top h1{font:600 15px/1.3 var(--sans);color:var(--light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.live-top p{font-size:13px;color:var(--muted-dark)}
+.stage{position:relative;margin:0 var(--s3);border-radius:var(--r2);overflow:hidden;background:var(--ink-2);min-height:0}
+.stage img{width:100%;height:100%;object-fit:cover;object-position:50% 22%;display:block;view-transition-name:coach-hero}
+.mock-tag{position:absolute;top:var(--s3);left:var(--s3);font-size:12px;color:var(--light);background:rgba(26,22,18,.72);border-radius:999px;padding:4px 10px}
+.state{position:absolute;left:50%;bottom:var(--s4);transform:translateX(-50%);display:inline-flex;align-items:center;gap:var(--s2);background:rgba(26,22,18,.86);color:var(--light);border-radius:999px;padding:8px 16px;font-size:15px;font-weight:600;white-space:nowrap;transition:background-color var(--t-ui)}
+.state .dot{width:10px;height:10px;border-radius:50%;background:var(--logo-gold);position:relative}
+.state[data-phase=listening] .dot::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--logo-gold);animation:ring 1.6s var(--ease) infinite}
+@keyframes ring{from{opacity:.9;transform:scale(.5)}to{opacity:0;transform:scale(1.6)}}
+.wave{display:inline-flex;gap:3px;align-items:center;height:14px}.wave i{width:3px;height:100%;border-radius:2px;background:var(--logo-gold);animation:wave .9s ease-in-out infinite}.wave i:nth-child(2){animation-delay:.15s}.wave i:nth-child(3){animation-delay:.3s}
+@keyframes wave{50%{transform:scaleY(.35)}}
+.dots{display:inline-flex;gap:4px}.dots i{width:6px;height:6px;border-radius:50%;background:var(--muted-dark);animation:blink 1.2s infinite}.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes blink{50%{opacity:.25}}
+.dock{display:grid;grid-template-columns:repeat(5,1fr);align-items:center;justify-items:center;padding:var(--s4) var(--s3) calc(var(--s2) + var(--safe-b))}
+.round{position:relative;width:var(--tap);height:var(--tap);border-radius:50%;border:0;background:var(--ink-3);color:var(--light);display:grid;place-items:center;transition:background-color var(--t-ui),transform var(--t-press) var(--ease)}
+.round:hover{background:var(--ink-4)}.round:active{transform:scale(.94)}
+.round[aria-pressed=false]{color:var(--muted-dark)}
+.round .count{position:absolute;top:-2px;right:-2px;background:var(--logo-gold);color:var(--ink);font-size:11px;font-weight:600;border-radius:999px;min-width:18px;height:18px;display:grid;place-items:center}
+.mic{width:76px;height:76px;border-radius:50%;border:0;background:var(--logo-gold);color:var(--ink);display:grid;place-items:center;position:relative;transition:background-color var(--t-ui),transform var(--t-press) var(--ease)}
+.mic:active{transform:scale(.95)}
+.mic.off{background:var(--ink-3);color:var(--light)}
+.mic[disabled]{background:var(--ink-3);color:var(--muted-dark);cursor:default}
+.dock-cap{grid-column:1/-1;font-size:13px;color:var(--muted-dark);text-align:center;margin-top:var(--s2);min-height:20px}
+.dock-labels{display:contents}
+.panel{background:var(--cream);color:var(--umber);display:flex;flex-direction:column;min-height:0}
+.panel-head{display:flex;align-items:center;gap:var(--s2);padding:var(--s2) var(--s3) var(--s2) var(--s4)}
+.panel-head .seg{flex:1}
+.panel-head .seg button{flex:1}
+.log{flex:1;overflow:auto;padding:var(--s2) var(--s4) var(--s5);overscroll-behavior:contain}
+.turn{display:grid;gap:var(--s2);padding:var(--s3) 0}
+.turn .who{font-size:13px;font-weight:600;color:var(--muted)}
+.turn.who-me .who{color:var(--gold-ink)}
+.turn .txt{color:var(--umber)}.turn.who-me .txt{color:var(--ink)}
+mark{background:none;color:inherit}
+.m-fix{text-decoration:underline wavy var(--line-strong) 1.5px;text-underline-offset:4px}
+.m-good{text-decoration:underline var(--gold) 2px;text-underline-offset:4px}
+.note{background:var(--card);border-radius:var(--r1);padding:var(--s2) var(--s3);font-size:14px;color:var(--umber);animation:rise var(--t-page) var(--ease) both}
+.note em{display:block;font-style:normal;font-size:12px;font-weight:600;color:var(--gold-ink)}
+.note b{font:600 17px/1.3 var(--serif);color:var(--ink)}
+.notes-empty{color:var(--muted);padding:var(--s5) 0}
+.compose{display:flex;gap:var(--s2);padding:var(--s2) var(--s3) calc(var(--s2) + var(--safe-b));border-top:1px solid var(--line)}
+.compose input{flex:1;min-height:var(--tap);border:1px solid var(--line-strong);border-radius:var(--r1);padding:0 var(--s3);background:var(--white)}
+/* Narrow: the panel is a bottom sheet */
+.sheet{position:fixed;left:0;right:0;bottom:0;height:min(78svh,640px);z-index:40;border-radius:var(--r3) var(--r3) 0 0;transform:translateY(105%);transition:transform var(--t-page) var(--ease);box-shadow:0 -12px 32px rgba(26,22,18,.3)}
+.grab{width:44px;height:5px;border-radius:3px;background:var(--line-2);margin:var(--s2) auto 0}
+body.sheet-open .sheet{transform:none}
+.sheet-scrim{position:fixed;inset:0;z-index:35;background:rgba(26,22,18,.5);opacity:0;pointer-events:none;transition:opacity var(--t-page) var(--ease)}
+body.sheet-open .sheet-scrim{opacity:1;pointer-events:auto}
+/* Wide: the panel sits beside the stage */
+[data-layout=wide] .live{grid-template-columns:minmax(0,1fr) 440px;grid-template-rows:auto minmax(0,1fr) auto;height:calc(100vh - var(--pv))}
+[data-layout=wide] .live-top,[data-layout=wide] .stage,[data-layout=wide] .dock{grid-column:1}
+[data-layout=wide] .stage{margin:0 var(--s5);aspect-ratio:auto}
+[data-layout=wide] .dock{padding:var(--s4) var(--s5) var(--s5);grid-template-columns:repeat(5,auto);justify-content:center;gap:var(--s4)}
+[data-layout=wide] .sheet{position:static;grid-column:2;grid-row:1/4;height:calc(100vh - var(--pv));border-radius:0;transform:none;box-shadow:none;transition:none}
+[data-layout=wide] .grab,[data-layout=wide] .sheet-scrim,[data-layout=wide] .t-btn,[data-layout=wide] .panel-close{display:none}
+[data-layout=wide] .panel-head{padding:var(--s5) var(--s5) var(--s3)}
+[data-layout=wide] .log{padding:var(--s2) var(--s5) var(--s6)}
+@media (min-width:1280px){[data-layout=wide] .live{grid-template-columns:minmax(0,1fr) 520px}[data-layout=wide] .turn.has-note{grid-template-columns:minmax(0,1fr) 168px;column-gap:var(--s4);align-items:start}[data-layout=wide] .turn.has-note .note{grid-column:2;grid-row:1/3}}
+/* Closing page and dialogs */
+.closing{position:fixed;inset:0;z-index:60;background:var(--ink);color:var(--light);display:grid;grid-template-columns:minmax(0,1fr);place-items:center;padding:var(--s5) var(--gutter) calc(var(--s5) + var(--safe-b));overflow:auto;animation:fade var(--t-page) var(--ease) both}
+@keyframes fade{from{opacity:0}}
+.closing-in{width:min(600px,100%);display:grid;gap:var(--s4)}
+.closing img.logo{height:28px}
+.closing h2{font:600 36px/1.04 var(--serif);color:var(--light);letter-spacing:-.02em}
+.closing .what{color:var(--light);font-size:16px}
+.facts3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2)}
+.facts3 div{background:var(--ink-2);border-radius:var(--r1);padding:var(--s3)}
+.facts3 dt{font-size:12px;color:var(--muted-dark)}
+.facts3 dd{margin:2px 0 0;font-size:22px;color:var(--light)}
+.closing .why{font-size:15px;color:var(--light)}
+.closing .stack{display:grid;gap:var(--s2)}
+.closing .quiet{display:flex;flex-wrap:wrap;gap:0 var(--s5)}
+.alert{display:flex;gap:var(--s3);background:var(--ink-3);border-radius:var(--r1);padding:var(--s3);color:var(--light);font-size:15px}
+.alert .i{color:var(--logo-gold)}
+.scrim{position:fixed;inset:0;z-index:70;background:rgba(26,22,18,.55);display:grid;align-items:end;justify-items:center;padding:var(--s3);animation:fade var(--t-ui) var(--ease) both}
+.dialog{background:var(--cream);color:var(--umber);border-radius:var(--r3);padding:var(--s5);width:min(460px,100%);display:grid;gap:var(--s3);animation:rise var(--t-page) var(--ease) both;margin-bottom:var(--safe-b)}
+.dialog h2{font:600 26px/1.1 var(--serif)}
+.dialog .acts{display:grid;gap:var(--s2);margin-top:var(--s2)}
+[data-layout=wide] .scrim{align-items:center}
+[data-layout=wide] .closing h2{font-size:52px}
+[data-layout=wide] .closing .stack{grid-template-columns:auto auto;justify-content:start}
+
+/* ===== Wardrobe ===== */
+.wd-controls{display:grid;gap:var(--s3);margin:var(--s5) 0 var(--s3)}
+.scroll-row{display:flex;gap:var(--s2);overflow-x:auto;margin:0 calc(-1 * var(--gutter));padding:0 var(--gutter) 4px;scrollbar-width:none}
+.scroll-row::-webkit-scrollbar{display:none}
+.scroll-row .chip{flex:none}
+.entries{list-style:none;margin:0;padding:0}
+.entry{border-top:1px solid var(--line)}
+.entry:last-child{border-bottom:1px solid var(--line)}
+.entry-row{display:grid;grid-template-columns:var(--tap) minmax(0,1fr) var(--tap);align-items:center;gap:var(--s1);min-height:64px;padding:var(--s2) 0}
+.pick{width:var(--tap);height:var(--tap);border:0;background:none;display:grid;place-items:center}
+.pick span{width:22px;height:22px;border-radius:6px;box-shadow:inset 0 0 0 1.5px var(--line-strong);display:grid;place-items:center;color:var(--ink);transition:background-color var(--t-ui),box-shadow var(--t-ui)}
+.pick[aria-pressed=true] span{background:var(--gold);box-shadow:none}
+.entry .ph{color:var(--ink);font-weight:500;line-height:1.4}
+.entry .meta{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px var(--s3);margin-top:2px}
+.entry .type{color:var(--gold-ink);font-weight:600}
+.again{color:var(--ink)}
+.expand .i{transition:transform var(--t-ui) var(--ease)}
+.entry.is-open .expand .i{transform:rotate(180deg)}
+.more{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--t-ui) var(--ease)}
+.entry.is-open .more{grid-template-rows:1fr}
+.more>div{overflow:hidden}
+.more-in{margin:0 0 var(--s4) var(--tap);background:var(--card);border-radius:var(--r1);padding:var(--s3) var(--s4);display:grid;gap:var(--s2);font-size:15px}
+.more-in .de{color:var(--ink)}
+.more-in s{text-decoration-color:var(--line-strong)}
+.more-in .src{font-size:14px;color:var(--muted)}
+.more-in .acts{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s1)}
+.entry.leaving{opacity:.5;transition:opacity var(--t-page)}
+.moving{color:var(--gold-ink);font-weight:600;font-size:14px}
+.group-h{padding:var(--s5) 0 var(--s2)}
+.group-h h2{font:600 22px/1.15 var(--serif)}
+.empty{padding:var(--s7) 0;text-align:left}
+.empty h2{font:600 26px var(--serif);margin-bottom:var(--s2)}
+.tray{position:sticky;bottom:calc(var(--nav-h) + var(--s2) + var(--safe-b));margin-top:var(--s4);background:var(--ink);color:var(--light);border-radius:var(--r2);padding:var(--s2) var(--s2) var(--s2) var(--s4);display:flex;align-items:center;gap:var(--s3);box-shadow:0 10px 28px rgba(26,22,18,.25);animation:rise var(--t-page) var(--ease) both}
+.tray p{flex:1;font-size:15px}
+.slots{display:inline-flex;gap:4px;vertical-align:-1px;margin-right:6px}.slots i{width:10px;height:10px;border-radius:3px;box-shadow:inset 0 0 0 1.5px var(--muted-dark)}.slots i.on{background:var(--logo-gold);box-shadow:none}
+[data-layout=wide] .tray{bottom:var(--s4)}
+[data-layout=wide] .wd-grid{display:grid;grid-template-columns:240px minmax(0,1fr);gap:var(--s6);align-items:start}
+[data-layout=wide] .wd-controls{position:sticky;top:48px;margin:0}
+[data-layout=wide] .wd-controls .scroll-row{flex-direction:column;overflow:visible;margin:0;padding:0}
+[data-layout=wide] .wd-controls .chip{justify-content:space-between;display:flex;align-items:center;border-radius:var(--r1);background:none;padding:0 var(--s3)}
+[data-layout=wide] .wd-controls .chip:hover{background:var(--card)}
+[data-layout=wide] .wd-controls .chip[aria-pressed=true]{background:var(--pill);color:var(--ink);font-weight:600}
+[data-layout=wide] .more-in{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:var(--s5)}
+[data-layout=wide] .more-in .acts,[data-layout=wide] .more-in .full{grid-column:1/-1}
+
+/* ===== Progress & history ===== */
+.finding{font:600 24px/1.2 var(--serif);color:var(--ink)}
+.chart-card{background:var(--white);border-radius:var(--r2);padding:var(--s5) var(--s4) var(--s4);margin-top:var(--s4)}
+.chart{width:100%;height:auto;display:block;margin-top:var(--s3)}
+.bar rect{fill:var(--line-2)}.bar.is-now rect{fill:var(--gold)}
+.bar-v{font:500 12px var(--sans);fill:var(--ink)}.bar-x{font:400 12px var(--sans);fill:var(--muted)}.bar-base{stroke:var(--line-strong)}
+.facts{margin:var(--s4) 0 0;background:var(--card);border-radius:var(--r2);padding:0 var(--s4)}
+.facts div{display:flex;justify-content:space-between;gap:var(--s3);padding:var(--s3) 0}
+.facts div+div{border-top:1px solid var(--line)}
+.facts dt{color:var(--umber)}.facts dd{margin:0;color:var(--ink);font-weight:500}
+.level{margin-top:var(--s4);background:var(--card);border-radius:var(--r2);padding:var(--s4)}
+.level .big{font:600 40px/1 var(--serif);color:var(--ink)}
+.month-h{font:600 24px var(--serif);margin:var(--s6) 0 var(--s2)}
+.hist{list-style:none;margin:0;padding:0}
+.hist li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s1) var(--s3);align-items:center;padding:var(--s3) 0;border-top:1px solid var(--line)}
+.hist li:last-child{border-bottom:1px solid var(--line)}
+.hist b{color:var(--ink);font-weight:500;display:block}
+.hist .cap{grid-column:1}
+.hist .acts{grid-row:1/3;grid-column:2;display:flex;gap:var(--s1);align-items:center}
+.status-p{display:inline-block;font-size:12px;font-weight:600;color:var(--gold-ink);background:var(--tint);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:1px}
+[data-layout=wide] .prog-grid{display:grid;grid-template-columns:minmax(0,8fr) minmax(0,4fr);gap:var(--s4);align-items:start}
+[data-layout=wide] .prog-grid .facts,[data-layout=wide] .prog-grid .level{margin-top:0}
+[data-layout=wide] .side-col{display:grid;gap:var(--s4)}
+[data-layout=wide] .hist li{grid-template-columns:110px minmax(0,1fr) 190px 190px auto;padding:var(--s3) 0}
+[data-layout=wide] .hist .d{display:block}
+[data-layout=wide] .hist .cap{grid-column:auto}
+[data-layout=wide] .hist .acts{grid-row:auto;grid-column:auto}
+.hist .d,.hist .w{display:none}
+@media (max-width:1279px){[data-layout=wide] .hist li{grid-template-columns:100px minmax(0,1fr) 170px auto}[data-layout=wide] .hist .w{display:none!important}}
+[data-layout=wide] .hist .w{display:block;color:var(--muted);font-size:14px}
+
+/* ===== Profile ===== */
+.me-card{display:flex;align-items:center;gap:var(--s3);margin:var(--s2) 0 var(--s5)}
+.me-card .avatar-me{width:56px;height:56px;font-size:18px}
+.me-card b{display:block;font:600 24px/1.1 var(--serif);color:var(--ink)}
+.menu{list-style:none;margin:0;padding:0 var(--s4);background:var(--card);border-radius:var(--r2)}
+.menu li+li{border-top:1px solid var(--line)}
+.menu button,.menu a{width:100%;display:grid;grid-template-columns:24px minmax(0,1fr) 20px;gap:var(--s3);align-items:center;min-height:64px;background:none;border:0;padding:var(--s3) 0;text-align:left;color:var(--umber);text-decoration:none}
+.menu .i{color:var(--gold-ink)}
+.menu b{display:block;color:var(--ink);font-weight:600}
+.menu span{display:block;font-size:14px;color:var(--muted)}
+.menu [aria-current=true]{color:var(--ink)}
+.signout{margin-top:var(--s4)}
+.pane{display:grid;gap:var(--s5)}
+.pane h2{font:600 28px/1.1 var(--serif)}
+.pane .row2{display:grid;gap:var(--s4)}
+.save-bar{position:sticky;bottom:calc(var(--nav-h) + var(--safe-b));padding:var(--s3) 0;background:var(--cream)}
+details.faq{border-top:1px solid var(--line)}
+details.faq:last-of-type{border-bottom:1px solid var(--line)}
+details.faq summary{list-style:none;cursor:pointer;min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:var(--s3);font-weight:500;color:var(--ink)}
+details.faq summary::-webkit-details-marker{display:none}
+details.faq summary .i{transition:transform var(--t-ui) var(--ease)}
+details.faq[open] summary .i{transform:rotate(180deg)}
+details.faq p{padding:0 0 var(--s4);max-width:62ch}
+[data-layout=wide] .prof-grid{display:grid;grid-template-columns:320px minmax(0,1fr);gap:var(--s7);align-items:start}
+[data-layout=wide] .prof-list{position:sticky;top:48px}
+[data-layout=wide] .menu [aria-current=true]{box-shadow:inset 3px 0 0 var(--gold)}
+[data-layout=wide] .save-bar{bottom:0}
+[data-layout=wide] .pane .row2{grid-template-columns:1fr 1fr}
+
+/* ===== Onboarding ===== */
+.ob{min-height:100svh;display:grid;background:var(--cream)}
+.ob-art{display:none}
+.ob-main{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;min-height:100svh;padding:0 var(--gutter);max-width:640px;width:100%;margin:0 auto}
+.ob-top{display:flex;align-items:center;gap:var(--s3);min-height:64px}
+.ob-top img{height:28px}
+.ob-top .grow{flex:1}
+.steps{display:grid;gap:6px;margin:var(--s2) 0 var(--s5)}
+.steps .bars{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.steps .bars i{height:4px;border-radius:2px;background:var(--line)}
+.steps .bars i.done{background:var(--gold)}
+.steps .bars i.now{background:var(--ink)}
+.ob-panel{view-transition-name:ob-step;display:grid;align-content:start;gap:var(--s5);padding-bottom:var(--s5)}
+.ob-panel .lede{margin-top:0}
+.ob-foot{position:sticky;bottom:0;background:var(--cream);display:flex;align-items:center;gap:var(--s3);padding:var(--s3) 0 calc(var(--s3) + var(--safe-b))}
+.ob-foot .btn-primary{flex:1}
+.ob-foot.stack{flex-direction:column;align-items:stretch;gap:var(--s1)}
+.choice{display:grid;gap:var(--s2)}
+.choice button{display:grid;grid-template-columns:minmax(0,1fr) 28px;align-items:center;gap:var(--s3);text-align:left;min-height:64px;padding:var(--s3) var(--s4);border:0;border-radius:var(--r2);background:var(--white);box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow var(--t-ui)}
+.choice b{display:block;color:var(--ink);font-weight:600}
+.choice span{font-size:14px;color:var(--muted)}
+.choice .tick{width:24px;height:24px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--line-strong);display:grid;place-items:center;color:transparent}
+.choice [aria-checked=true]{box-shadow:inset 0 0 0 2px var(--gold)}
+.choice [aria-checked=true] .tick{background:var(--gold);box-shadow:none;color:var(--ink)}
+.steplist{list-style:none;margin:0;padding:0;display:grid;gap:var(--s3)}
+.steplist li{display:flex;gap:var(--s3);align-items:baseline}
+.steplist b{color:var(--ink);font-weight:600}
+.opt{font-size:12px;font-weight:600;color:var(--gold-ink);background:var(--tint);border-radius:999px;padding:1px 8px;margin-left:6px}
+.review{margin:0;background:var(--card);border-radius:var(--r2);padding:0 var(--s4)}
+.review div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s2);align-items:center;padding:var(--s3) 0}
+.review div+div{border-top:1px solid var(--line)}
+.review dt{font-size:13px;color:var(--muted)}
+.review dd{margin:0;color:var(--ink);grid-column:1}
+.review .link{grid-row:1/3;grid-column:2}
+[data-layout=wide] .ob{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
+[data-layout=wide] .ob-art{display:grid;position:sticky;top:0;height:100vh;background:var(--ink);color:var(--light);padding:var(--s7);grid-template-rows:auto 1fr auto;gap:var(--s5)}
+[data-layout=wide] .ob-art .pair{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3);align-self:center}
+[data-layout=wide] .ob-art .pair img{width:100%;aspect-ratio:3/4;object-fit:cover;object-position:50% 20%;border-radius:var(--r2)}
+[data-layout=wide] .ob-art .pair figcaption{font-size:14px;color:var(--muted-dark);margin-top:var(--s2)}
+[data-layout=wide] .ob-art q{font:600 30px/1.15 var(--serif);quotes:none;color:var(--light)}
+[data-layout=wide] .ob-main{padding:0 var(--s7)}
+[data-layout=wide] .ob-top img{display:none}
+
+/* ===== Toast + prototype panel ===== */
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + var(--s4) + var(--safe-b));transform:translate(-50%,16px);opacity:0;pointer-events:none;background:var(--ink);color:var(--light);border-radius:var(--r1);padding:var(--s3) var(--s4);font-size:14px;width:max-content;max-width:calc(100vw - 32px);transition:opacity var(--t-ui),transform var(--t-ui) var(--ease);z-index:90}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+/* Preview notice: a thin in-flow strip that scrolls away; --pv lets the fixed-height session screen make room for it */
+html:has(#proto){--pv:24px}
+#proto{position:relative;z-index:95;height:var(--pv);font:12px/1.35 system-ui,sans-serif;background:var(--card);border-bottom:1px solid var(--line)}
+#proto button{font:inherit;cursor:pointer}
+.pp-toggle{width:100%;height:100%;background:none;border:0;color:var(--umber);padding:0 var(--s3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp-toggle::after{content:'';display:inline-block;margin-left:6px;border:4px solid transparent;border-top-color:currentColor;vertical-align:-1px}
+.pp-toggle[aria-expanded=true]::after{border-top-color:transparent;border-bottom-color:currentColor;vertical-align:3px}
+.pp-panel{position:absolute;top:calc(100% + 4px);right:8px;background:var(--white);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px;width:250px;max-height:78vh;overflow:auto;box-shadow:0 10px 30px rgba(26,22,18,.18);display:flex;flex-direction:column}
+.pp-panel button{text-align:left;background:none;border:0;border-radius:6px;padding:6px 8px;color:var(--ink)}.pp-panel button:hover{background:var(--card)}
+.pp-h{margin:6px 8px 2px;color:var(--muted);font-size:12px}
+
+/* ===== Motion: route and shared-element transitions (native View Transitions) ===== */
+::view-transition-group(*){animation-duration:var(--t-page);animation-timing-function:var(--ease)}
+::view-transition-old(root){animation:vt-out 160ms var(--ease) both}
+::view-transition-new(root){animation:vt-in var(--t-page) var(--ease) both}
+@keyframes vt-out{to{opacity:0}}
+@keyframes vt-in{from{opacity:0;transform:translateY(6px)}}
+html[data-dir=fwd]::view-transition-old(ob-step){animation:slide-out-l var(--t-page) var(--ease) both}
+html[data-dir=fwd]::view-transition-new(ob-step){animation:slide-in-r var(--t-page) var(--ease) both}
+html[data-dir=back]::view-transition-old(ob-step){animation:slide-out-r var(--t-page) var(--ease) both}
+html[data-dir=back]::view-transition-new(ob-step){animation:slide-in-l var(--t-page) var(--ease) both}
+@keyframes slide-in-r{from{opacity:0;transform:translateX(32px)}}@keyframes slide-out-l{to{opacity:0;transform:translateX(-32px)}}
+@keyframes slide-in-l{from{opacity:0;transform:translateX(-32px)}}@keyframes slide-out-r{to{opacity:0;transform:translateX(32px)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important}}
+
+@media (min-width:600px){:root{--gutter:24px}.display{font-size:40px}.coaches{gap:var(--s4)}}
+@media (max-width:359px){:root{--gutter:12px}.display{font-size:30px}.title{font-size:26px}.dock{padding-left:var(--s1);padding-right:var(--s1)}.mic{width:68px;height:68px}.facts3 dd{font-size:18px}.closing h2{font-size:30px}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div id="app"></div>
+<script src="data.js?v=4"></script>
+<script src="app.js?v=4"></script>
+<script>
+const { t, esc, fmt, icon } = P;
+const D = P.D;
+const greet = () => (S.lang === 'de' ? 'Guten Tag' : 'Good afternoon');
+const slots = n => `<span class="slots" aria-hidden="true">${Array.from({ length: D.maxSelected }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
+const DOMAIN_HINT = { sales: 'Pitches, negotiations, key accounts', manufacturing: 'Production meetings, handovers, safety', procurement: 'Supplier talks, prices, contracts', supply_chain: 'Delays, logistics, forecasts', quality: 'Complaints, audits, corrective actions', leadership: 'Feedback, team meetings, change' };
+const appbar = (title, back) => `<header class="appbar">${back ? `<button class="icon-btn" data-act="go" data-v="${back}" data-dir="back" aria-label="Back">${icon('chevronLeft', 22)}</button><h1 class="grow">${title}</h1>` : `<img src="assets/logo.png" alt="SavvySpeak Professionals"><span class="grow"></span>`}<button class="lang" data-act="lang" aria-label="Switch language">${S.lang === 'en' ? 'DE' : 'EN'}</button></header>`;
+const field = (scope, k, label, opts = {}) => {
+  const src = scope === 'edit' ? S.edit : S.draft, val = k.includes('.') ? (src.answers[k.split('.')[1]] || '') : src[k];
+  const err = scope === 'draft' && S.errors[k];
+  return `<div class="field${err ? ' has-error' : ''}"><label for="f-${k}">${label}${opts.optional ? ' <span class="opt">Optional</span>' : ''}</label>${opts.hint ? `<p class="hint" id="h-${k}">${opts.hint}</p>` : ''}
+    <input id="f-${k}" data-scope="${scope}" data-field="${k}" value="${esc(val)}" ${opts.type ? `type="${opts.type}" inputmode="numeric" min="0" max="100"` : ''} placeholder="${esc(opts.placeholder || '')}" ${opts.hint ? `aria-describedby="h-${k}"` : ''} ${err ? 'aria-invalid="true"' : ''} autocomplete="${opts.ac || 'off'}">
+    <p class="err" role="alert">${icon('alert', 16)}${opts.err || 'Please fill this in.'}</p></div>`;
+};
+
+window.Views = {
+  shell(S, body) {
+    if (['welcome', 'setup', 'ready', 'session'].includes(S.screen)) return body;
+    const cur = k => (S.screen === k ? ' aria-current="page"' : '');
+    const items = [['#home', 'home', t('home'), 'home'], ['#wardrobe', 'wardrobe', t('wardrobe'), 'hanger'], ['#progress', 'progress', t('progress'), 'progress'], ['#profile', 'profile', t('profile'), 'user']];
+    return `<div class="shell"><nav class="nav" aria-label="Main">
+        <a class="brand" href="#home"><img src="assets/logo.png" alt="SavvySpeak Professionals, MySavvy home"></a>
+        <a class="btn btn-primary nav-start" href="#start">${icon('mic', 18)}${t('start')}</a>
+        <ul>${items.map(([h, k, l, i]) => `<li><a href="${h}"${cur(k)}>${icon(i, 22)}<span>${l}</span>${k === 'wardrobe' && S.badge ? `<span class="badge" aria-label="${S.badge} new phrases">+${S.badge}</span>` : ''}</a></li>`).join('')}</ul>
+        <div class="nav-foot"><span class="avatar-me">${D.account.initials}</span>${esc(S.profile.name || 'Lena')} Hoffmann<button class="lang" data-act="lang" style="margin-left:auto" aria-label="Switch language">${S.lang === 'en' ? 'DE' : 'EN'}</button></div>
+      </nav><main id="main" class="main">${body}</main>${S.confirm ? Views.confirm(S) : ''}</div>`;
+  },
+
+  confirm(S) {
+    const c = S.confirm;
+    if (c.kind === 'cancel') return `<div class="scrim"><div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="cf-h"><h2 id="cf-h">Cancel your subscription?</h2><p>Your request goes to our team, who confirm it by email. You keep access until ${fmt(D.account.renews, 'long')}.</p>
+      <div class="acts"><button class="btn btn-primary" data-act="confirmYes">Yes, cancel subscription</button><button class="btn btn-quiet" data-act="confirmNo">Keep my membership</button></div></div></div>`;
+    const s = P.sessionById(c.id);
+    return `<div class="scrim"><div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="cf-h"><h2 id="cf-h">Delete this session?</h2><p>“${esc(s.title)}” is removed from your history. Its phrases stay in your Language Wardrobe.</p>
+      ${!s.exported && s.status === 'ended' ? `<p class="small">No report was downloaded for it, so there is nothing to download first.</p>` : s.exported ? `<button class="link" data-act="report" data-id="${s.id}">Download the report first</button>` : ''}
+      <div class="acts"><button class="btn btn-primary" data-act="confirmYes">${icon('trash', 18)}Delete session</button><button class="btn btn-quiet" data-act="confirmNo">Keep it</button></div></div></div>`;
+  },
+
+  // ---------- 1. Onboarding ----------
+  obFrame(S, inner, { step, optional, foot, stack }) {
+    return `<div class="ob"><aside class="ob-art on-dark" aria-hidden="true"><img src="assets/logo-light.png" alt="" style="height:30px">
+        <figure class="pair" style="margin:0"><div><img src="assets/jane.jpg" alt=""><figcaption>Jane, British English</figcaption></div><div><img src="assets/wayne.jpg" alt=""><figcaption>Wayne, American English</figcaption></div></figure>
+        <q>Real situations from your own work, practised out loud.</q></aside>
+      <main class="ob-main" id="main"><div><div class="ob-top"><img src="assets/logo.png" alt="SavvySpeak Professionals"><span class="grow"></span>${optional ? `<button class="btn btn-quiet" data-act="obSkip">${t('skip')}</button>` : ''}<button class="lang" data-act="lang" aria-label="Switch language">${S.lang === 'en' ? 'DE' : 'EN'}</button></div>
+        ${step ? `<div class="steps"><p class="cap" aria-live="polite">Step ${step} of 4${optional ? ' · optional' : ''}</p><div class="bars" aria-hidden="true">${[1, 2, 3, 4].map(i => `<i class="${i < step ? 'done' : i === step ? 'now' : ''}"></i>`).join('')}</div></div>` : ''}</div>
+        <section class="ob-panel">${inner}</section><div class="ob-foot${stack ? ' stack' : ''}">${foot}</div></main></div>`;
+  },
+  welcome(S) {
+    return Views.obFrame(S, `<div class="steps" style="margin:0"><p class="cap">${icon('check', 16).replace('class="i"', 'class="i" style="display:inline;vertical-align:-3px;color:var(--gold-ink)"')} Your account is ready</p></div>
+      <h1 class="display">Welcome to MySavvy, ${esc(S.draft.name)}.</h1>
+      <p class="lede">Four short steps set up your coaching profile, so Jane and Wayne can build each conversation around your real work. It takes about two minutes, and you can change everything later.</p>
+      <ol class="steplist">${[[t('aboutYou'), 'Name, role and industry'], [t('focus'), 'Where you use English most'], [t('level'), 'Your test score', 1], [t('more'), 'Details that make scenarios realistic', 1]].map(([a, b, o], i) => `<li><span class="num cap">${i + 1}</span><div><b>${a}</b>${o ? '<span class="opt">Optional</span>' : ''}<p class="cap">${b}</p></div></li>`).join('')}</ol>`,
+    { foot: `<a class="btn btn-quiet" href="#incomplete">Later</a><button class="btn btn-primary" data-act="go" data-v="#setup-1">Set up my profile${icon('arrowRight', 18)}</button>` });
+  },
+  setup(S) {
+    const d = S.draft, n = S.step;
+    const back = `<button class="btn btn-quiet" data-act="obBack">${icon('chevronLeft', 18)}${t('back')}</button>`;
+    const next = `<button class="btn btn-primary" data-act="obNext">${n === 4 ? 'Review' : t('next')}${icon('arrowRight', 18)}</button>`;
+    const inner = {
+      1: `<h1 class="title">${t('aboutYou')}</h1><p class="lede">Your coach uses this to set the scene. A fictional role is fine.</p>
+        ${field('draft', 'name', 'Your name', { ac: 'given-name', err: 'Add the name your coach should use.' })}
+        ${field('draft', 'role', 'What you do', { placeholder: 'e.g. Key account manager', err: 'Add your role so the scenarios fit your job.' })}
+        ${field('draft', 'industry', 'Your industry', { placeholder: 'e.g. Industrial pumps', err: 'Add your industry so the vocabulary fits.' })}`,
+      2: `<h1 class="title">${t('focus')}</h1><p class="lede">Where do you use English most? You can change it for a single session later.</p>
+        <div class="choice" role="radiogroup" aria-label="${t('focus')}">${D.domains.map(x => `<button role="radio" aria-checked="${d.domain === x.id}" data-act="obDomain" data-id="${x.id}"><div><b>${x[S.lang]}</b><span>${DOMAIN_HINT[x.id]}</span></div><span class="tick">${icon('check', 14)}</span></button>`).join('')}</div>`,
+      3: `<h1 class="title">${t('level')}</h1><p class="lede">Take the short English test, then enter your score. Your coach adjusts its language to match. You can retake the test any time.</p>
+        <button class="btn btn-line" data-act="testLink">${icon('external', 18)}Take the English test</button>
+        ${field('draft', 'english_level', 'Your score (0–100)', { type: 'number', optional: 1, hint: 'Not tested yet? Skip this step. Your coach starts at an intermediate level.' })}`,
+      4: `<h1 class="title">${t('more')}</h1><p class="lede">Optional details that make your scenarios more realistic.</p>
+        ${D.questions.map(q => field('draft', 'answers.' + q.id, q.label, { optional: 1, placeholder: 'e.g. ' + q.example })).join('')}`,
+    }[n];
+    return Views.obFrame(S, inner, { step: n, optional: n >= 3, foot: back + next });
+  },
+  ready(S) {
+    const d = S.draft;
+    const rows = [['Name', d.name, 1], ['Role and industry', [d.role, d.industry].filter(Boolean).join(', ') || '–', 1], [t('focus'), P.domain(d.domain) || '–', 2], ['English score', d.english_level ? `${d.english_level} / 100` : 'Not tested yet', 3]];
+    return Views.obFrame(S, `<h1 class="display">You're all set, ${esc(d.name)}.</h1><p class="lede">This is your coaching profile. Every session uses it, and you can edit it any time under Profile.</p>
+      <dl class="review">${rows.map(([a, b, s]) => `<div><dt>${a}</dt><dd>${esc(b)}</dd><button class="link" data-act="obEdit" data-v="#setup-${s}" aria-label="Edit ${a}">Edit</button></div>`).join('')}</dl>`,
+    { foot: `<button class="btn btn-primary" data-act="obFinish" data-v="#start">Start your first session</button><button class="btn btn-quiet" data-act="obFinish" data-v="#first">Go to dashboard</button>`, stack: true });
+  },
+
+  // ---------- 2. Dashboard ----------
+  home(S) {
+    const c = P.counts(), st = P.stats(), mode = S.mode;
+    const paused = S.sessions.filter(s => s.status === 'paused').sort((a, b) => b.date.localeCompare(a.date))[0];
+    const last = [...S.sessions].filter(s => s.status === 'ended').sort((a, b) => b.date.localeCompare(a.date))[0];
+    const focus = S.entries.find(e => e.selected) || S.entries.find(e => e.status !== 'mastered');
+    const n = S.notice;
+    const notice = !n ? '' : n.kind === 'saving'
+      ? `<div class="notice" role="status"><span class="spin"></span><p class="grow">Session saved. Adding its phrases to your Wardrobe…</p></div>`
+      : n.kind === 'saved' ? `<div class="notice" role="status">${icon('check')}<p class="grow">${n.added ? `${P.plural(n.added, 'new phrase', 'new phrases')} in your Wardrobe${n.repeated ? `, and ${n.repeated} you already had came up again` : ''}. <a href="#wardrobe">Open Wardrobe</a>` : 'Session saved. No new phrases this time.'}</p><button class="icon-btn" data-act="dismiss" aria-label="Dismiss">${icon('x', 18)}</button></div>`
+      : `<div class="notice" role="status">${icon('pause')}<p class="grow">Paused and saved. Continue it from here whenever you like.</p><button class="icon-btn" data-act="dismiss" aria-label="Dismiss">${icon('x', 18)}</button></div>`;
+    let lead, sub;
+    if (mode === 'incomplete') {
+      sub = 'Two details are missing from your profile.';
+      lead = `<section class="lead-block solo on-dark"><div class="txt"><p class="kick">Profile: 1 of 4 steps to finish</p><h2>Add your role and industry</h2><p>Your coach needs them to set the scene. It takes under a minute, and everything you entered is kept.</p><div class="acts"><a class="btn btn-gold" href="#setup-1">Finish my profile</a></div></div></section>`;
+    } else if (mode === 'first') {
+      sub = 'Your first conversation is one tap away.';
+      lead = `<section class="lead-block solo on-dark"><div class="txt"><div class="duo"><img src="assets/jane.jpg" alt="Jane"><img src="assets/wayne.jpg" alt="Wayne"></div><p class="kick">10 to 20 minutes, out loud</p><h2>Start your first session</h2><p>Pick Jane or Wayne. The scenario starts straight away and fits your profile: ${esc(S.profile.role || 'your role')}, ${P.domain(S.profile.domain)}.</p><div class="acts"><a class="btn btn-gold" href="#start">${t('start')}</a></div></div></section>`;
+    } else if (paused) {
+      const pc = P.coach(paused.coach);
+      sub = `${pc.name} is waiting where you paused.`;
+      lead = `<section class="lead-block on-dark" aria-label="Paused session"><div class="pic"><img src="${pc.img}" alt="${pc.name}" style="view-transition-name:coach-hero"></div><div class="txt"><p class="kick">Paused ${fmt(paused.date)} with ${pc.name}, ${paused.minutes} min in</p><h2>${esc(paused.title)}</h2><div class="acts"><button class="btn btn-gold" data-act="resume" data-id="${paused.id}">${icon('play', 16)}${t('continue')}</button><a class="btn btn-line-light" href="#start">${t('newSession')}</a></div></div></section>`;
+    } else {
+      sub = 'Ready when you are.';
+      lead = `<section class="lead-block on-dark"><div class="pic"><img src="${P.coach(S.coach).img}" alt="" style="view-transition-name:coach-hero"></div><div class="txt"><h2>Practise a real situation</h2><p>Jane and Wayne build the scene from your profile.</p><div class="acts"><a class="btn btn-gold" href="#start">${t('start')}</a></div></div></section>`;
+    }
+    const first = mode === 'first';
+    const prev = [
+      ['#wardrobe', 'hanger', t('wardrobeFull'), first ? 'Fills with phrases after your first session' : `${c.fresh} new, ${c.selected} of ${D.maxSelected} picked for practice`],
+      ['#progress', 'progress', t('progress'), first ? 'Starts with your first session' : `${fmt(D.today, 'month')}: ${P.plural(st.month.length, 'session', 'sessions')}, ${st.month.reduce((a, s) => a + s.minutes, 0)} min`],
+      ['#history', 'transcript', 'Last session', last ? `${esc(last.title)}, ${fmt(last.date)}` : 'Your sessions appear here'],
+      ['#profile-coaching', 'user', t('coaching'), `${esc(S.profile.role || 'Role missing')}, ${P.domain(S.profile.domain)}${S.profile.english_level ? `, score ${S.profile.english_level}` : ''}`],
+    ];
+    return `${appbar()}${notice}<div class="hello"><h1 class="display">${greet()}, ${esc(S.profile.name)}.</h1><p class="lede">${sub}</p></div>
+      <div class="home-grid">${lead}
+        ${mode === 'returning' && paused && focus ? `<section class="today" aria-label="Phrase to use today"><p class="h3">Use it today</p><q>${esc(focus.phrase)}</q><p lang="de">${esc(focus.de)}</p><p class="cap">From ${esc(P.sessionById(focus.session).title)}</p><a class="act" href="#wardrobe">Open in your Wardrobe</a></section>` : ''}
+        <ul class="previews">${prev.map(([h, i, a, b]) => `<li><a href="${h}">${icon(i, 22)}<div><b>${a}</b><span>${b}</span></div><span class="chev">${icon('chevronRight', 18)}</span></a></li>`).join('')}</ul>
+      </div>`;
+  },
+
+  // ---------- 3. Start a session ----------
+  start(S) {
+    const picked = S.practiceIds.map(id => S.entries.find(e => e.id === id)).filter(Boolean);
+    const c = P.coach(S.coach), dom = S.focus || S.profile.domain;
+    return `${appbar('New session', '#home')}<div class="start-grid"><div>
+      <h1 class="title" style="margin-bottom:var(--s2)">Who do you want to talk to?</h1><p class="lede" style="margin-bottom:var(--s5)">Same scenario quality with either coach. Pick the accent you want to hear.</p>
+      <div class="coaches" role="radiogroup" aria-label="${t('coach')}">${D.coaches.map(x => `<button class="coach" role="radio" aria-checked="${S.coach === x.id}" data-act="coach" data-id="${x.id}"><img src="${x.img}" alt="" ${S.coach === x.id ? 'style="view-transition-name:coach-hero"' : ''}><div class="who"><div><b>${x.name}</b><span>${x.accent}</span></div><span class="tick">${icon('check', 16)}</span></div></button>`).join('')}</div></div>
+      <div class="start-side">
+        <section class="section"><div class="summary"><div><h2 style="margin:0">${t('focus')}</h2><p>${P.domain(dom)}${S.focus ? ' <span class="cap">(this session only)</span>' : ' <span class="cap">(from your profile)</span>'}</p></div><button class="link" data-act="focusOpen" aria-expanded="${S.focusOpen}">${S.focusOpen ? 'Done' : 'Change'}</button></div>
+          ${S.focusOpen ? `<div class="chips" style="margin-top:var(--s3)">${D.domains.map(x => `<button class="chip" data-act="focus" data-id="${x.id}" aria-pressed="${dom === x.id}">${x[S.lang]}</button>`).join('')}</div>` : ''}</section>
+        <section class="section"><div class="summary"><div><h2 style="margin:0">${t('aboutYou')}</h2><p>${esc(S.profile.role)}, ${esc(S.profile.industry)}${S.profile.english_level ? `. English score ${esc(S.profile.english_level)}` : ''}</p></div><a class="link" href="#profile-coaching">Edit</a></div></section>
+        ${picked.length ? `<section class="section"><h2>Practising from your Wardrobe</h2><ul class="picked">${picked.map(e => `<li><span>${esc(e.phrase)}</span><button class="icon-btn" data-act="removePick" data-id="${e.id}" aria-label="Remove ${esc(e.phrase)}">${icon('x', 18)}</button></li>`).join('')}</ul></section>` : ''}
+        <div class="sticky-go"><button class="btn btn-primary btn-block" data-act="begin">${icon('mic', 18)}Begin with ${c.name}</button><p class="cap">Silence is thinking time. ${c.name} waits for you.</p></div>
+      </div></div>`;
+  },
+
+  // ---------- 4–6. Conversation, transcript, ending ----------
+  session(S) {
+    const cur = P.current(), c = P.coach(cur.coach), L = S.live, turns = P.visibleTurns(), notes = turns.filter(x => x.note);
+    const greeting = L.turn <= 1 && L.phase === 'speaking';
+    const st = L.phase === 'connecting' ? `<span class="spin"></span>Connecting to ${c.name}…`
+      : L.phase === 'listening' ? (L.mic ? `<span class="dot"></span>${t('listening')}` : `${icon('micOff', 16)}${t('micOff')}`)
+      : L.phase === 'speaking' ? `<span class="wave"><i></i><i></i><i></i></span>${c.name} · ${t('speaking').toLowerCase()}` : `<span class="dots"><i></i><i></i><i></i></span>${t('thinking')}`;
+    const cap = L.phase === 'connecting' ? 'Setting up your conversation.' : greeting ? `Your mic opens after ${c.name}'s greeting.` : L.mic ? `Talk any time. Interrupt ${c.name} and ${c.gender === 'female' ? 'she' : 'he'} stops to listen.` : 'Your microphone is off. Tap the button to talk.';
+    const turnHTML = x => `<div class="turn who-${x.who}${x.note ? ' has-note' : ''}"><p class="who">${x.who === 'me' ? 'You' : c.name}</p><p class="txt">${P.markLine(x)}</p>${x.note ? `<p class="note"><em>${x.note.kind === 'correction' ? 'Better' : 'Strong phrase'}</em><b>${esc(x.note.better)}</b> ${esc(x.note.why)}</p>` : ''}</div>`;
+    const panel = L.tab === 'notes'
+      ? (notes.length ? notes.map(x => `<div class="turn"><p class="who">You said</p><p class="txt">${P.markLine(x)}</p><p class="note"><em>${x.note.kind === 'correction' ? 'Better' : 'Strong phrase'}</em><b>${esc(x.note.better)}</b> ${esc(x.note.why)}</p></div>`).join('') : `<p class="notes-empty">Coaching notes appear here as you talk. They are saved to your Wardrobe at the end.</p>`)
+      : (turns.length ? turns.map(turnHTML).join('') : `<p class="notes-empty">The conversation appears here.</p>`);
+    const end = S.end ? `<div class="closing" role="dialog" aria-modal="true" aria-labelledby="end-h"><div class="closing-in on-dark">
+        <img class="logo" src="assets/logo-light.png" alt="SavvySpeak Professionals"><h2 id="end-h">End the conversation with ${c.name}?</h2><p class="what">${esc(cur.title)}</p>
+        <dl class="facts3"><div><dt>Time</dt><dd class="num">${P.elapsed()}</dd></div><div><dt>Your replies</dt><dd class="num">${turns.filter(x => x.who === 'me').length}</dd></div><div><dt>Notes</dt><dd class="num">${notes.length}</dd></div></dl>
+        <p class="why">Your phrases go to your Wardrobe either way. The report can only be created now.</p>
+        ${S.end === 'error' ? `<div class="alert" role="alert">${icon('alert')}<p>The report could not be created. Try again, or end without it. Your phrases are still saved.</p></div>` : ''}
+        <div class="stack"><button class="btn btn-gold" data-act="endDownload" ${S.end === 'working' ? 'disabled' : ''}>${S.end === 'working' ? '<span class="spin"></span>Creating report…' : `${icon('download', 18)}${S.end === 'error' ? 'Try the download again' : t('endDownload')}`}</button>
+          <button class="btn btn-line-light" data-act="endPlain" ${S.end === 'working' ? 'disabled' : ''}>${S.end === 'error' ? 'End without report' : t('endSession')}</button></div>
+        <div class="quiet"><button class="link" data-act="keep">${t('keepTalking')}</button><button class="link" data-act="pause">Pause and continue later</button></div></div></div>` : '';
+    const still = S.still ? `<div class="scrim"><div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="st-h"><h2 id="st-h">Still there?</h2><p>It has been quiet for 4 minutes. In 1 minute the session pauses, so nothing is lost.</p>
+        <div class="acts"><button class="btn btn-primary" data-act="stillHere">I'm here, keep going</button><button class="btn btn-quiet" data-act="pause">Pause now</button></div></div></div>` : '';
+    return `<div class="live">
+      <header class="live-top"><div class="ttl"><h1>${esc(cur.title)}</h1><p><span class="num">${P.elapsed()}</span> · ${P.domain(cur.domain)} with ${c.name}</p></div>
+        <button class="btn btn-line-light" data-act="end" aria-label="${t('endSession')}" style="min-height:44px;padding:0 var(--s4)">${icon('stop', 16)}${t('end')}</button></header>
+      <section class="stage" aria-label="Conversation with ${c.name}"><img src="${c.img}" alt="${c.name}, your coach"><p class="mock-tag">Preview image · live video in the app</p>
+        <p class="state" role="status" data-live="status" data-phase="${L.phase}">${st}</p></section>
+      <div class="dock">
+        <button class="round" data-act="sound" data-live="sound" aria-pressed="${L.sound}" aria-label="${L.sound ? 'Mute coach' : 'Unmute coach'}">${icon(L.sound ? 'volume' : 'volumeOff', 22)}</button>
+        <button class="round" data-act="text" aria-pressed="${L.text}" aria-label="${L.text ? 'Hide typing' : 'Type instead'}">${icon('keyboard', 22)}</button>
+        <button class="mic${L.mic ? '' : ' off'}" data-act="mic" data-live="mic" aria-pressed="${L.mic}" aria-label="${L.mic ? 'Mute microphone' : 'Unmute microphone'}" ${greeting ? 'disabled' : ''}>${icon(L.mic ? 'mic' : 'micOff', 30)}</button>
+        <button class="round t-btn" data-act="sheet" data-live="tbtn" aria-label="${t('transcript')} and ${t('notes').toLowerCase()} (${notes.length} notes)" aria-expanded="${L.sheet}">${icon('transcript', 22)}${notes.length ? `<span class="count">${notes.length}</span>` : ''}</button>
+        <button class="round" data-act="pause" aria-label="${t('pause')}">${icon('pause', 22)}</button>
+        <p class="dock-cap" data-live="cap">${cap}</p>
+      </div>
+      <div class="sheet-scrim" data-act="sheet"></div>
+      <aside class="panel sheet" data-sheet aria-label="${t('transcript')}"><div class="grab"></div>
+        <div class="panel-head" data-live="tabs"><div class="seg" role="tablist"><button role="tab" data-act="tab" data-v="transcript" aria-selected="${L.tab === 'transcript'}">${t('transcript')}</button><button role="tab" data-act="tab" data-v="notes" aria-selected="${L.tab === 'notes'}">${t('notes')}<span class="num">${notes.length}</span></button></div>
+          <button class="icon-btn panel-close" data-act="sheet" aria-label="Close">${icon('chevronDown', 22)}</button></div>
+        <div class="log" data-live="log" data-scroll-end>${panel}</div>
+        ${L.text ? `<form class="compose" onsubmit="return false"><label class="sr" for="say">Type your reply</label><input id="say" placeholder="Type your reply" enterkeyhint="send"><button class="btn btn-primary">Send</button></form>` : ''}
+      </aside>${end}${still}</div>`;
+  },
+
+  // ---------- 7. Language Wardrobe ----------
+  wardrobe(S) {
+    const W = S.wd, c = P.counts(), lib = W.view === 'library', list = P.entriesView();
+    const row = e => {
+      const s = P.sessionById(e.session), open = S.open.has(e.id), leaving = S.leaving.has(e.id), extra = [P.practiceLine(e), P.repeatLine(e)].filter(Boolean);
+      return `<li class="entry${open ? ' is-open' : ''}${leaving ? ' leaving' : ''}" id="row-${e.id}" style="view-transition-name:e-${e.id}">
+        <div class="entry-row">${lib ? '<span></span>' : `<button class="pick" data-act="select" data-id="${e.id}" aria-pressed="${e.selected}" aria-label="${e.selected ? 'Remove from practice' : t('addPractice')}: ${esc(e.phrase)}"><span>${e.selected ? icon('check', 14) : ''}</span></button>`}
+          <div><p class="ph">${esc(e.phrase)}</p><p class="meta"><span class="type">${P.typeLabel[e.type]}</span>${W.group === 'session' ? '' : `<span>${fmt(s.date)}</span>`}${e.repeats.length ? `<span class="again">Came up again ×${e.repeats.length}</span>` : ''}${leaving ? '<span class="moving">Moved to Library</span>' : ''}</p></div>
+          <button class="icon-btn expand" data-act="details" data-id="${e.id}" aria-expanded="${open}" aria-controls="more-${e.id}" aria-label="Details: ${esc(e.phrase)}">${icon('chevronDown', 20)}</button></div>
+        <div class="more" id="more-${e.id}"><div><div class="more-in">
+          <p class="de" lang="de"><span class="cap" lang="en">DE&nbsp;</span>${esc(e.de)}</p>
+          ${e.original ? `<p>You said <s>${esc(e.original)}</s></p>` : ''}
+          <p>${esc(e.why)}</p>
+          <p class="src">From <a href="#history">${esc(s.title)}</a>, ${fmt(s.date, 'long')} with ${P.coach(s.coach).name}${e.tags.length ? `. ${e.tags.map(x => P.tagLabel[x]).join(', ')}` : ''}</p>
+          ${extra.map(x => `<p class="src">${x}</p>`).join('')}
+          <div class="acts">${lib ? `<button class="btn btn-line" data-act="status" data-id="${e.id}" data-v="keep_practising">${t('moveBack')}</button>` : `<button class="btn btn-line" data-act="status" data-id="${e.id}" data-v="mastered">${icon('check', 18)}${t('mastered')}</button>`}</div>
+        </div></div></div></li>`;
+    };
+    const body = !list.length
+      ? `<div class="empty"><h2>${lib ? 'Nothing mastered yet' : W.filter !== 'all' ? 'Nothing with this label' : 'Your Wardrobe is empty'}</h2><p>${lib ? 'Mark a phrase as mastered and it moves here.' : W.filter !== 'all' ? 'Choose “All” to see every phrase.' : 'Finish a conversation and its strongest phrases collect here.'}</p></div>`
+      : W.group === 'session' ? P.groups().map(g => `<section><div class="group-h"><h2>${esc(g.session.title)}</h2><p class="cap">${fmt(g.session.date, 'long')} with ${P.coach(g.session.coach).name}</p></div><ul class="entries">${g.entries.map(row).join('')}</ul></section>`).join('')
+      : `<ul class="entries">${list.map(row).join('')}</ul>`;
+    const flt = [['all', t('all')], ['power_phrase', 'Strong phrases'], ['upgrade', 'Upgrades'], ['correction', 'Refinements'], ['verb', 'Verbs'], ['business_vocabulary', 'Business vocabulary']];
+    return `${appbar(t('wardrobeFull'))}<h1 class="title" style="view-transition-name:wardrobe-head">${t('wardrobeFull')}</h1>
+      <p class="lede">Phrases from your own conversations. Pick up to ${D.maxSelected}, and your coach builds a scenario where you use them.</p>
+      <div class="wd-grid"><div class="wd-controls">
+        <div class="seg" role="tablist" aria-label="Views"><button role="tab" data-act="view" data-v="active" aria-selected="${!lib}">${t('active')}<span class="num">${c.active}</span></button><button role="tab" data-act="view" data-v="library" aria-selected="${lib}">${t('library')}<span class="num">${c.library}</span></button></div>
+        <div class="seg" role="group" aria-label="Group"><button data-act="group" data-v="newest" aria-pressed="${W.group === 'newest'}">${t('newest')}</button><button data-act="group" data-v="session" aria-pressed="${W.group === 'session'}">${t('bySession')}</button></div>
+        <div class="scroll-row" role="group" aria-label="Filter">${flt.map(([v, l]) => `<button class="chip" data-act="filter" data-v="${v}" aria-pressed="${W.filter === v}">${l}<span class="num">${c.filter(v)}</span></button>`).join('')}</div></div>
+      <div>${body}${lib ? '' : `<div class="tray" role="region" aria-label="Practice selection" style="${c.selected ? '' : 'display:none'}"><p>${slots(c.selected)}<b class="num">${c.selected} of ${D.maxSelected}</b> picked</p><button class="btn btn-gold" data-act="practise">${t('practise')}</button></div>`}</div></div>`;
+  },
+
+  // ---------- 8. Progress & history ----------
+  progress(S) {
+    const st = P.stats(), wk = P.weeks(), hist = S.tab === 'history';
+    const best = Math.max(...wk.map(w => w.minutes)), bestW = wk.filter(w => w.minutes === best);
+    const finding = bestW.length > 1 ? `Your busiest weeks were the last ${bestW.length === 2 && bestW.every(w => wk.indexOf(w) >= 4) ? 'two' : bestW.length}, at ${best} minutes each.` : `Your busiest week was ${bestW[0].now ? 'this one' : `the week of ${fmt(bestW[0].start)}`}, at ${best} minutes.`;
+    const tabs = `<div class="seg" role="tablist" aria-label="Progress views" style="margin:var(--s5) 0 var(--s2)"><button role="tab" data-act="tabTo" data-v="overview" aria-selected="${!hist}">${t('overview')}</button><button role="tab" data-act="tabTo" data-v="history" aria-selected="${hist}">${t('history')}<span class="num">${S.sessions.length}</span></button></div>`;
+    if (!hist) return `${appbar(t('progress'))}<h1 class="title">Your progress</h1><p class="lede">Counted from your own sessions. Nothing here is a score.</p>${tabs}
+      ${S.sessions.length ? `<div class="prog-grid"><section class="chart-card"><p class="finding">${finding}</p><p class="cap">Minutes spoken per week, last six weeks</p>${P.bars(wk)}</section>
+        <div class="side-col"><dl class="facts"><div><dt>Sessions ended</dt><dd class="num">${st.ended}</dd></div><div><dt>Paused</dt><dd class="num">${st.paused} of ${D.maxPaused}</dd></div><div><dt>Minutes spoken</dt><dd class="num">${st.minutes}</dd></div><div><dt>Phrases in your Wardrobe</dt><dd class="num">${st.phrases}</dd></div><div><dt>Mastered</dt><dd class="num">${st.mastered}</dd></div></dl>
+        <section class="level"><p class="cap">English test score</p><p class="big num">${S.profile.english_level || '–'}<span class="cap"> / 100</span></p><p class="small">You entered it in your profile. Retake the test any time.</p><button class="link" data-act="testLink">Take the test again</button></section></div></div>`
+      : `<div class="empty"><h2>Nothing to count yet</h2><p>Your sessions, minutes and phrases show up here after your first conversation.</p><a class="btn btn-primary" href="#start" style="margin-top:var(--s4)">${t('start')}</a></div>`}`;
+    const months = {};
+    [...S.sessions].sort((a, b) => b.date.localeCompare(a.date)).forEach(s => (months[s.date.slice(0, 7)] ||= []).push(s));
+    return `${appbar(t('progress'))}<h1 class="title">Your progress</h1><p class="lede">Every conversation, newest first. Paused sessions can be continued; reports exist only if you downloaded them at the end.</p>${tabs}
+      ${Object.entries(months).map(([m, list]) => `<h2 class="month-h">${fmt(m + '-01', 'month')}</h2><ul class="hist">${list.map(s => `<li style="view-transition-name:h-${s.id}">
+        <span class="d cap num">${fmt(s.date, 'weekday')}</span><div><b>${esc(s.title)}${s.status === 'paused' ? '<span class="status-p">Paused</span>' : ''}</b></div>
+        <span class="w">${P.domain(s.domain)}, ${P.coach(s.coach).name}</span><span class="cap num">${fmt(s.date)}, ${s.minutes} min${s.status === 'ended' ? `, ${P.plural(P.phrasesIn(s.id), 'phrase', 'phrases')}` : ''}</span>
+        <div class="acts">${s.status === 'paused' ? `<button class="btn btn-primary" style="min-height:40px;padding:0 var(--s4)" data-act="resume" data-id="${s.id}">${t('continue')}</button>` : s.exported ? `<button class="icon-btn" data-act="report" data-id="${s.id}" aria-label="${t('download')}: ${esc(s.title)}" title="${t('download')}">${icon('download')}</button>` : `<span class="icon-btn" style="color:var(--line-2)" title="No report saved" aria-label="No report saved">–</span>`}
+          <button class="icon-btn" data-act="rename" data-id="${s.id}" aria-label="${t('rename')}: ${esc(s.title)}">${icon('edit', 18)}</button><button class="icon-btn" data-act="askDelete" data-id="${s.id}" aria-label="${t('delete')}: ${esc(s.title)}">${icon('trash', 18)}</button></div></li>`).join('')}</ul>`).join('') || `<div class="empty"><h2>No sessions yet</h2><p>Your conversations collect here, named after what they were about.</p></div>`}`;
+  },
+
+  // ---------- 9. Profile & settings ----------
+  profile(S) {
+    const p = S.profile, pane = S.pane;
+    const items = [['coaching', 'user', t('coaching'), `${esc(p.role || 'Role missing')}, ${P.domain(p.domain)}`], ['account', 'globe', t('account'), `${D.account.email}, ${S.lang === 'de' ? 'Deutsch' : 'English'}`], ['plan', 'card', t('plan'), `${D.account.plan}, renews ${fmt(D.account.renews)}`], ['help', 'help', t('help'), 'FAQs, video guide, contact']];
+    const list = `<div class="prof-list"><div class="me-card"><span class="avatar-me">${D.account.initials}</span><div><b>${esc(p.name)} Hoffmann</b><span class="cap">${D.account.email}</span></div></div>
+      <ul class="menu">${items.map(([k, i, a, b]) => `<li><button data-act="pane" data-v="${k}" aria-current="${pane === k}">${icon(i, 22)}<div><b>${a}</b><span>${b}</span></div>${icon('chevronRight', 18)}</button></li>`).join('')}</ul>
+      <button class="btn btn-quiet signout" data-act="mock" data-v="you would be signed out.">${icon('logout', 18)}${t('signOut')}</button></div>`;
+    const e = S.edit || p;
+    const panes = {
+      coaching: `<div class="pane"><div><h2>${t('coaching')}</h2><p class="lede">Every session uses this. Name, role and industry are required.</p></div>
+        <div class="row2">${field('edit', 'name', 'Your name')}${field('edit', 'role', 'What you do')}</div>${field('edit', 'industry', 'Your industry')}
+        <div class="field"><label>${t('focus')}</label><div class="chips">${D.domains.map(x => `<button class="chip" data-act="editDomain" data-id="${x.id}" aria-pressed="${e.domain === x.id}">${x[S.lang]}</button>`).join('')}</div></div>
+        <div class="row2">${field('edit', 'english_level', 'English test score (0–100)', { type: 'number', optional: 1, hint: 'From the test. Your coach adjusts its language to it.' })}<div style="align-self:end"><button class="btn btn-line" data-act="testLink">${icon('external', 18)}Take the test</button></div></div>
+        ${D.questions.map(q => field('edit', 'answers.' + q.id, q.label, { optional: 1, placeholder: 'e.g. ' + q.example })).join('')}
+        <div class="save-bar"><button class="btn btn-primary btn-block" data-act="saveProfile">${t('save')}</button></div></div>`,
+      account: `<div class="pane"><h2>${t('account')}</h2>
+        <div class="field"><label>Language of the app</label><div class="seg"><button aria-pressed="${S.lang === 'en'}" data-act="${S.lang === 'en' ? 'mock' : 'lang'}" data-v="English is already selected.">English</button><button aria-pressed="${S.lang === 'de'}" data-act="${S.lang === 'de' ? 'mock' : 'lang'}" data-v="Deutsch ist bereits gewählt.">Deutsch</button></div><p class="hint">Your coach always speaks English.</p></div>
+        <dl class="facts" style="margin:0"><div><dt>Email</dt><dd>${D.account.email}</dd></div><div><dt>Password</dt><dd><button class="link" style="min-height:0" data-act="mock" data-v="a password reset email would be sent.">Change</button></dd></div></dl>
+        <div><button class="btn btn-line" data-act="mock" data-v="the browser cache would be cleared and the page reloaded.">Clear cache and reload</button><p class="cap" style="margin-top:var(--s2)">Use this if something looks out of date.</p></div></div>`,
+      plan: `<div class="pane"><h2>${t('plan')}</h2><dl class="facts" style="margin:0"><div><dt>Plan</dt><dd>${D.account.plan}</dd></div><div><dt>Renews</dt><dd>${fmt(D.account.renews, 'long')}</dd></div></dl>
+        <button class="btn btn-line" data-act="mock" data-v="the payment page opens in a new tab.">${icon('external', 18)}Manage payment</button><button class="link" data-act="askCancel">Cancel subscription</button></div>`,
+      help: `<div class="pane"><h2>${t('help')}</h2><div>
+        ${[['Which language should I speak?', 'English, always. Your coach gently steers you back if you switch. That is part of the practice.'], ['What if I go quiet?', 'Silence is thinking time. After 4 minutes your coach asks if you are still there, and after 5 the session pauses so nothing is lost.'], ['Where do my phrases go?', 'At the end of each session, the strongest phrases and corrections are saved to your Language Wardrobe, whether or not you download the report.'], ['Can I download a report later?', 'Only if you downloaded it when the session ended. It cannot be created afterwards.']].map(([q, a]) => `<details class="faq"><summary>${q}${icon('chevronDown', 18)}</summary><p>${a}</p></details>`).join('')}</div>
+        <button class="btn btn-line" data-act="mock" data-v="the 'How to use MySavvy' video plays.">${icon('play', 18)}Watch how to use MySavvy</button><a class="btn btn-quiet" href="mailto:kontakt@savvyspeak.ai?subject=MySavvy%20support">Contact support</a></div>`,
+    };
+    const head = appbar(pane ? items.find(x => x[0] === pane)[2] : t('profile'), pane ? '#profile' : null);
+    return `${head}<h1 class="title sr">${t('profile')}</h1><div class="prof-grid">${(!pane || document.documentElement.dataset.layout === 'wide') ? list : ''}${pane ? `<section aria-label="${items.find(x => x[0] === pane)[2]}">${panes[pane]}</section>` : ''}</div>`;
+  },
+};
+</script>
+</body>
+</html>

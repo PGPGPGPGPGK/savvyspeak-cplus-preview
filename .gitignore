@@ -1,0 +1,9 @@
+# Allowlist: publish only the preview itself. Screenshots (shots/) and tooling stay local.
+/*
+!/.gitignore
+!/.nojekyll
+!/README.md
+!/index.html
+!/app.js
+!/data.js
+!/assets/
